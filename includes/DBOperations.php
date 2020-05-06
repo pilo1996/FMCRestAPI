@@ -13,11 +13,12 @@ include 'functions.php';
 
         public function createUser($email, $nome, $password){
             if(!$this->emailExists($email)){
-                $sql = "INSERT INTO users (email, nome, password, validated, token) VALUES (?,?,?,?,?)";
+                $sql = "INSERT INTO users (email, nome, password, validated, token) VALUES (?,?,?,?,?);";
                 $stmt = $this->conn->prepare($sql);
                 $token = generateToken();
                 $hashed_password = encryptPassword($password);
-                $stmt->bind_param("sssis", $email, $nome, $hashed_password, 1, $token);
+                $validated = 1;
+                $stmt->bind_param("sssis", $email, $nome, $hashed_password, $validated, $token);
                 $res = $stmt->execute();
                 if($res)
                     return USER_CREATED;
@@ -68,14 +69,13 @@ include 'functions.php';
             $stmt->bind_result($id, $email, $nome, $password, $validated, $token, $profile_pic, $selected_device);
             $stmt->fetch();
             $user = array();
-            $user['id'] = $id;
+            $user['userID'] = $id;
             $user['email'] = $email;
             $user['nome'] = $nome;
-            $user['password'] = $password;
-            $user['validated'] = $validated;
-            $user['token'] = $token;
+            $user['plainPassword'] = $password;
+            $user['isValidated'] = $validated;
             $user['profile_pic'] = $profile_pic;
-            $user['selected_device'] = $selected_device;
+            $user['selectDeviceID'] = $selected_device;
             return $user;
         }
 
@@ -156,7 +156,8 @@ include 'functions.php';
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("i", $id);
             $stmt->execute();
-            return $stmt->fetch();
+            $email = $stmt->get_result()->fetch_row();
+            return $email[0];
         }
 
         public function getAllPositionsByUserID($id){
@@ -182,10 +183,10 @@ include 'functions.php';
             return $positions;
         }
 
-        public function getPositionsByDeviceUserID($id, $deviceID){
-            $sql = "SELECT * FROM locations WHERE id=? AND device_fk=?;";
+        public function getPositionsByDeviceUserID($userID, $deviceID){
+            $sql = "SELECT * FROM locations WHERE user_fk=? AND device_fk=?;";
             $stmt = $this->conn->prepare($sql);
-            $stmt->bind_param("ii", $id, $deviceID);
+            $stmt->bind_param("ii", $userID, $deviceID);
             $stmt->execute();
             $stmt->bind_result($positionID, $deviceID, $userID, $traduzione, $lat, $lon, $dayTime, $dateTime);
             $positions = array();
@@ -199,7 +200,6 @@ include 'functions.php';
                 $position['longitude'] = $lon;
                 $position['dayTime'] = $dayTime;
                 $position['dateTime'] = $dateTime;
-                return $position;
                 array_push($positions, $position);
             }
             return $positions;
@@ -207,8 +207,8 @@ include 'functions.php';
 
         public function addDevice($nomeDevice, $uuid, $ownerID){
             if($this->userIDExists($ownerID)){
-                if(!$this->isDeviceAlreadyRegistered($nomeDevice, $uuid, $ownerID)){
-                    $sql = "INSERT INTO devices (nome_device, uuid_device, ownerFk, ownerEmail) VALUES (?,?,?,?);";
+                if(!$this->isDeviceAlreadyRegistered($uuid, $ownerID)){
+                    $sql = "INSERT INTO devices (nome_device, uuid_device, ownerFk, ownerEmail) VALUES (?,?,?,?)";
                     $stmt = $this->conn->prepare($sql);
                     $emailbyID = $this->getEmailbyID($ownerID);
                     $stmt->bind_param("ssis", $nomeDevice, $uuid, $ownerID, $emailbyID);
@@ -259,13 +259,13 @@ include 'functions.php';
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("is", $ownerID, $uuid);
             $stmt->execute();
-            $stmt->bind_result($id_device, $nome_device, $uuid_device, $ownerFk, $ownerEmail);
+            $data = $stmt->get_result()->fetch_row();
             $device = array();
-            $device['id'] = $id_device;
-            $device['name'] = $nome_device;
-            $device['uuid'] = $uuid_device;
-            $device['ownerID'] = $ownerFk;
-            $device['email'] = $ownerEmail;
+            $device['id'] = $data[0];
+            $device['name'] = $data[1];
+            $device['uuid'] = $data[2];
+            $device['ownerID'] = $data[3];
+            $device['email'] = $data[4];
             return $device;
         }
 
@@ -413,26 +413,46 @@ include 'functions.php';
         public function addPosition($userID, $deviceID, $traduzione, $lat, $lon, $dayTime, $dateTime){
                 $sql = "INSERT INTO locations (device_fk, user_fk, via, latitudine, longitudine, dayTime, dateTime) VALUES (?,?,?,?,?,?,?);";
                 $stmt = $this->conn->prepare($sql);
-                $stmt->bind_param("iisdds", $deviceID, $userID, $traduzione, $lat, $lon, $dayTime, $dateTime);
+                $stmt->bind_param("iisddss", $deviceID, $userID, $traduzione, $lat, $lon, $dayTime, $dateTime);
                 $res = $stmt->execute();
                 if($res){
                     $sql = "SELECT * FROM locations WHERE device_fk=? AND user_fk=? AND dayTime=?";
                     $stmt = $this->conn->prepare($sql);
                     $stmt->bind_param("iis", $deviceID, $userID, $dayTime);
                     $stmt->execute();
-                    $stmt->bind_result($positionID, $deviceID, $userID, $traduzione, $lat, $lon, $dayTime, $dateTime);
+                    $data = $stmt->get_result()->fetch_row();
                     $position = array();
-                    $position['positionID'] = $positionID;
-                    $position['deviceID'] = $deviceID;
-                    $position['userID'] = $userID;
-                    $position['address'] = $traduzione;
-                    $position['latitude'] = $lat;
-                    $position['longitude'] = $lon;
-                    $position['dayTime'] = $dayTime;
-                    $position['dateTime'] = $dateTime;
+                    $position['positionID'] = $data[0];
+                    $position['deviceID'] = $data[1];
+                    $position['userID'] = $data[2];
+                    $position['address'] = $data[3];
+                    $position['latitude'] = $data[4];
+                    $position['longitude'] = $data[5];
+                    $position['dayTime'] = $data[6];
+                    $position['dateTime'] = $data[7];
                     return $position;
                 }
                 else
                     return null;
+        }
+
+        public function uploadImage($userID, $img_reference){
+            $dest_dir = 'C:/xampp/htdocs/profilepics/';
+            $imgPath = null;
+            $target_file = $dest_dir . uniqid() . '.'.$img_reference;
+            if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
+                $sql = "UPDATE users SET profile_pic = ? WHERE id = ?;";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param("si", $target_file, $userID);
+                if($stmt->execute()){
+                    /*
+                    $url  = isset($_SERVER['HTTPS']) ? 'https://' : 'http://';
+                    $url .= $_SERVER['SERVER_NAME'];
+                    $url .= $_SERVER['REQUEST_URI'];
+                    $imgPath =  dirname($url).'/profilepics/';*/
+                    $imgPath = 'http://camoli.ns0.it/profilepics/';
+                }
+            }
+            return $imgPath;
         }
     }

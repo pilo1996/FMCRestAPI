@@ -189,6 +189,35 @@ $app->put('/updateSelectedDevice', function (Request $request, Response $respons
 
 //TODO api per richiedere reset password
 
+$app->post('/uploadProfilePic', function (Request $request, Response $response){
+    if(!hasEmptyParameters(array('user_id'), $request, $response)) {
+        if(isset($_FILES['image']['name'])){
+            $request_data = $request->getParsedBody();
+
+            $img_name = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
+            $userID = $request_data['user_id'];
+
+            $dbo = new DBOperations();
+            $response_data = array();
+            $urlImg = $dbo->uploadImage($userID, $img_name);
+            if ($urlImg != null) {
+                $response_data['error'] = false;
+                $response_data['message'] = "Dispositivo selezionato aggiornato.";
+                $response_data['url'] = $urlImg;
+                $response->write(json_encode($response_data));
+                return $response->withHeader('Content-type', 'application/json')->withStatus(200);
+            } else {
+                $response_data['error'] = true;
+                $response_data['message'] = "Impossibile aggiornare la foto profilo";
+                return $response->withHeader('Content-type', 'application/json')->withStatus(422);
+            }
+        }
+        else
+            return $response->withHeader('Content-type', 'application/json')->withStatus(421);
+    }else
+        return $response->withHeader('Content-type', 'application/json')->withStatus(420);
+});
+
 //************************************** LOCATIONS **************************************
 
 $app->post('/getAllPositions', function(Request $request, Response $response){
@@ -224,7 +253,7 @@ $app->post('/getAllPositionsFromDeviceID', function(Request $request, Response $
         $response_data = array();
 
         $response_data['error'] = false;
-        $response_data['locations'] = $locations;
+        $response_data['positions'] = $locations;
 
         $response->write(json_encode($response_data));
         return $response->withHeader('Content-type', 'application/json')->withStatus(200);
@@ -258,26 +287,36 @@ $app->put('/addPosition', function (Request $request, Response $response){
         } else {
             $response_data['error'] = true;
             $response_data['message'] = "Impossibile aggiungere la posizione.";
-            return $response->withHeader('Content-type', 'application/json')->withStatus(422);
+            return $response->withHeader('Content-type', 'application/json')->withStatus(423);
         }
     }else
         return $response->withHeader('Content-type', 'application/json')->withStatus(422);
 });
 
-$app->delete('/deleteAllPositionsByDevice/{deviceID, userID}', function (Request $request, Response $response, array $args){
-    $deviceID = $args['deviceID'];
-    $userID = $args['userID'];
-    $dbo = new DBOperations();
-    $response_data = array();
-    if($dbo->deletePositionsByDevice($userID, $deviceID)){
-        $response_data['error'] = false;
-        $response_data['message'] = 'Posizioni eliminate.';
-    }else{
-        $response_data['error'] = true;
-        $response_data['message'] = 'Posizioni non eliminati.';
+$app->post('/deleteAllPositionsByDevice', function (Request $request, Response $response){
+    $statusCode = 400;
+    if(!hasEmptyParameters(array('userid', 'deviceid'), $request, $response)) {
+        $request_data = $request->getParsedBody();
+
+        $userID = $request_data['userid'];
+        $deviceID = $request_data['deviceid'];
+
+        $dbo = new DBOperations();
+
+        $response_data = array();
+
+        if ($dbo->deletePositionsByDevice($userID, $deviceID)) {
+            $response_data['error'] = false;
+            $response_data['message'] = 'Posizioni eliminate.';
+            $statusCode = 200;
+        } else {
+            $response_data['error'] = true;
+            $response_data['message'] = 'Posizioni non eliminati.';
+            $statusCode = 420;
+        }
+        $response->write(json_encode($response_data));
     }
-    $response->write(json_encode($response_data));
-    return $response->withHeader('Content-type', 'application/json')->withStatus(200);
+    return $response->withHeader('Content-type', 'application/json')->withStatus($statusCode);
 });
 
 $app->delete('/deleteSinglePositionByID/{locationID}', function (Request $request, Response $response, array $args){
@@ -336,7 +375,6 @@ $app->post('/registerDevice', function (Request $request, Response $response){
                 $status_code = 422;
                 break;
         }
-
         $response->write(json_encode($response_data));
         return $response->withHeader('Content-type', 'application/json')->withStatus($status_code);
     }
@@ -409,17 +447,17 @@ $app->post('/bookmarkDevice', function (Request $request, Response $response){
             case DEVICE_FAILURE:
                 $message['error'] = true;
                 $message['message'] = 'Dispositivo NON salvato tra i preferiti.';
-                $status_code = 422;
+                $status_code = 421;
                 break;
             case DEVICE_ALREADY_REGISTERED:
                 $message['error'] = true;
                 $message['message'] = 'Dispositivo già registrato.';
-                $status_code = 422;
+                $status_code = 423;
                 break;
             case USER_NOT_FOUND:
                 $message['error'] = true;
                 $message['message'] = 'Utente non valido.';
-                $status_code = 422;
+                $status_code = 424;
                 break;
         }
 
@@ -446,43 +484,47 @@ $app->delete('/removeBookmarkedDevice/{deviceID, userID}', function (Request $re
     return $response->withHeader('Content-type', 'application/json')->withStatus(200);
 });
 
-$app->post('/getAllDevicesRegistered/{userID}', function(Request $request, Response $response, array $args){
-    if(!hasEmptyParameters(array($args['userID']), $request, $response)) {
-        $userID = $args['userID'];
+$app->get('/getAllDevicesRegistered/{userID}', function(Request $request, Response $response, array $args){
 
-        $dbo = new DBOperations();
+    $userID = $args['userID'];
 
-        $devices = $dbo->getAllDevicesRegistered($userID);
-        $response_data = array();
-
-        $response_data['error'] = false;
-        $response_data['devices'] = $devices;
-
-        $response->write(json_encode($response_data));
-        return $response->withHeader('Content-type', 'application/json')->withStatus(200);
-    }else
+    if(!isset($userID) && empty($userID))
         return $response->withHeader('Content-type', 'application/json')->withStatus(422);
+
+    $dbo = new DBOperations();
+
+    $devices = $dbo->getAllDevicesRegistered($userID);
+    $response_data = array();
+
+    $response_data['error'] = false;
+    $response_data['devices'] = $devices;
+
+    $response->write(json_encode($response_data));
+    return $response->withHeader('Content-type', 'application/json')->withStatus(200);
+
 });
 
-$app->post('/getAllDevicesBookmarked/{userID}', function(Request $request, Response $response, array $args){
-    if(!hasEmptyParameters(array($args['userID']), $request, $response)) {
-        $userID = $args['userID'];
+$app->get('/getAllDevicesBookmarked/{userID}', function(Request $request, Response $response, array $args){
 
-        $dbo = new DBOperations();
+    $userID = $args['userID'];
 
-        $devices = $dbo->getAllDevicesBookmarked($userID);
-        $response_data = array();
-
-        $response_data['error'] = false;
-        $response_data['devices'] = $devices;
-
-        $response->write(json_encode($response_data));
-        return $response->withHeader('Content-type', 'application/json')->withStatus(200);
-    }else
+    if(!isset($userID) && empty($userID))
         return $response->withHeader('Content-type', 'application/json')->withStatus(422);
+
+    $dbo = new DBOperations();
+
+    $devices = $dbo->getAllDevicesBookmarked($userID);
+    $response_data = array();
+
+    $response_data['error'] = false;
+    $response_data['devices'] = $devices;
+
+    $response->write(json_encode($response_data));
+    return $response->withHeader('Content-type', 'application/json')->withStatus(200);
+
 });
 
-$app->post('/getAllSavedDevices', function(Request $request, Response $response){
+$app->get('/getAllSavedDevices', function(Request $request, Response $response){
     if(!hasEmptyParameters(array('userID'), $request, $response)) {
         $request_data = $request->getParsedBody();
 
