@@ -1,33 +1,150 @@
-# Slim Framework 3 Skeleton Application
+# Find My Coso REST API con Framework Slim 3
 
-Use this skeleton application to quickly setup and start working on a new Slim Framework 3 application. This application uses the latest Slim 3 with the PHP-View template renderer. It also uses the Monolog logger.
+API REST create da uno scheletro del framework Slim versione 3 (attualmente 4) per via di compatibilità.
+API utilizzabili per l'app Find My Coso SE.
 
-This skeleton application was built for Composer. This makes setting up a new Slim Framework application quick and easy.
+## Lista e descrizione API
 
-## Install the Application
+### Utenti
 
-Run this command from the directory in which you want to install your new Slim Framework application.
+- `/createuser`
+  Permette la creazione dell'utente, ritorna:
+  | Codice | isError | Messaggio |
+  |--------|---------|-----------|
+  | 201 | No | Utente creato correttamente. |
+  | 422 | Sì | Utente già registrato. |
+  | 423 | Sì | Utente NON creato. |
+  
+- `/userLogin`
+  Permette il login dell'utente (verifica), ritorna:
+  | Codice | isError | Messaggio |
+  |--------|---------|-----------|
+  | 200 | No | Utente autenticato correttamente. |
+  | 422 | Sì | Password non corretta. |
+  | 422 | Sì | Utente NON trovato. |
 
-    php composer.phar create-project slim/slim-skeleton [my-app-name]
+- `/updateUser/{id}` 
+  Aggiorna nome e profile pic dell'utente, ritorna:
+  | Codice | isError | Messaggio |
+  |--------|---------|-----------|
+  | 200 | No | Utente aggiornato. |
+  | 422 | Sì | Impossibile aggiornare l'utente. |
 
-Replace `[my-app-name]` with the desired directory name for your new application. You'll want to:
+- `/updatePassword`
+  Permette la modifica della password (funzionalità prevista solo nel sito web), ritorna:
+  | Codice | isError | Messaggio |
+  |--------|---------|-----------|
+  | 201 | No | Password aggiornata. |
+  | 422 | Sì | Password attuale invalida. |
+  | 422 | Sì | Impossibile cambiare la password. |
 
-* Point your virtual host document root to your new application's `public/` directory.
-* Ensure `logs/` is web writeable.
+- `/updateSelectedDevice`
+  Per aggiornare la preferenza del dispositivo selezionato da visualizzarne i dati, ritorna:
+  | Codice | isError | Messaggio |
+  |--------|---------|-----------|
+  | 201 | No | Dispositivo selezionato aggiornato. |
+  | 422 | Sì | Impossibile selezionare il dispositivo. |
 
-To run the application in development, you can run these commands 
 
-	cd [my-app-name]
-	php composer.phar start
-	
-Or you can use `docker-compose` to run the app with `docker`, so you can run these commands:
+TODO: api per richiedere reset password
 
-         cd [my-app-name]
-	 docker-compose up -d
-After that, open `http://0.0.0.0:8080` in your browser.
+### Posizioni
 
-Run this command in the application directory to run the test suite
+- `/getallPositions`
+  Per aggiornare la preferenza del dispositivo selezionato da visualizzarne i dati, ritorna:
+  | Codice | isError | Messaggio |
+  |--------|---------|-----------|
+  | 201 | No | Dispositivo selezionato aggiornato. |
+  | 422 | Sì | Impossibile selezionare il dispositivo. |
 
-	php composer.phar test
+- `/getAllPositionsFromDeviceID`
+  Per aggiornare la preferenza del dispositivo selezionato da visualizzarne i dati, ritorna:
+  | Codice | isError | Messaggio |
+  |--------|---------|-----------|
+  | 201 | No | Dispositivo selezionato aggiornato. |
+  | 422 | Sì | Impossibile selezionare il dispositivo. |
 
-That's it! Now go build something cool.
+- `/addPosition`
+  Per aggiornare la preferenza del dispositivo selezionato da visualizzarne i dati, ritorna:
+  | Codice | isError | Messaggio |
+  |--------|---------|-----------|
+  | 201 | No | Dispositivo selezionato aggiornato. |
+  | 422 | Sì | Impossibile selezionare il dispositivo. |
+
+- `/deleteAllPositionsByDevice/{deviceID, userID}`
+  Per aggiornare la preferenza del dispositivo selezionato da visualizzarne i dati, ritorna:
+  | Codice | isError | Messaggio |
+  |--------|---------|-----------|
+  | 201 | No | Dispositivo selezionato aggiornato. |
+  | 422 | Sì | Impossibile selezionare il dispositivo. |
+
+- `/deleteSinglePositionByID/{locationID}`
+  Per aggiornare la preferenza del dispositivo selezionato da visualizzarne i dati, ritorna:
+  | Codice | isError | Messaggio |
+  |--------|---------|-----------|
+  | 201 | No | Dispositivo selezionato aggiornato. |
+  | 422 | Sì | Impossibile selezionare il dispositivo. |
+
+
+### Dispositivi
+
+- `/registerDevice`
+  Per aggiornare la preferenza del dispositivo selezionato da visualizzarne i dati, ritorna:
+  | Codice | isError | Messaggio |
+  |--------|---------|-----------|
+  | 201 | No | Dispositivo selezionato aggiornato. |
+  | 422 | Sì | Impossibile selezionare il dispositivo. |
+
+- `/updateDevice` deprecato per limiti di design app
+  Per aggiornare la preferenza del dispositivo selezionato da visualizzarne i dati, ritorna:
+  | Codice | isError | Messaggio |
+  |--------|---------|-----------|
+  | 201 | No | Dispositivo selezionato aggiornato. |
+  | 422 | Sì | Impossibile selezionare il dispositivo. |
+
+- `/removeDeviceRegistered/{deviceID}`
+  Per aggiornare la preferenza del dispositivo selezionato da visualizzarne i dati, ritorna:
+  | Codice | isError | Messaggio |
+  |--------|---------|-----------|
+  | 201 | No | Dispositivo selezionato aggiornato. |
+  | 422 | Sì | Impossibile selezionare il dispositivo. |
+
+- `/bookmarkDevice`
+  Per aggiornare la preferenza del dispositivo selezionato da visualizzarne i dati, ritorna:
+  | Codice | isError | Messaggio |
+  |--------|---------|-----------|
+  | 201 | No | Dispositivo selezionato aggiornato. |
+  | 422 | Sì | Impossibile selezionare il dispositivo. |
+
+- `/removeBookmarkedDevice/{deviceID, userID}`
+  Per aggiornare la preferenza del dispositivo selezionato da visualizzarne i dati, ritorna:
+  | Codice | isError | Messaggio |
+  |--------|---------|-----------|
+  | 201 | No | Dispositivo selezionato aggiornato. |
+  | 422 | Sì | Impossibile selezionare il dispositivo. |
+
+- `/getAllDevicesRegistered/{userID}`
+  Per aggiornare la preferenza del dispositivo selezionato da visualizzarne i dati, ritorna:
+  | Codice | isError | Messaggio |
+  |--------|---------|-----------|
+  | 201 | No | Dispositivo selezionato aggiornato. |
+  | 422 | Sì | Impossibile selezionare il dispositivo. |
+
+- `/getAllDevicesBookmarked/{userID}`
+  Per aggiornare la preferenza del dispositivo selezionato da visualizzarne i dati, ritorna:
+  | Codice | isError | Messaggio |
+  |--------|---------|-----------|
+  | 201 | No | Dispositivo selezionato aggiornato. |
+  | 422 | Sì | Impossibile selezionare il dispositivo. |
+
+- `/getAllSavedDevices`
+  Per aggiornare la preferenza del dispositivo selezionato da visualizzarne i dati, ritorna:
+  | Codice | isError | Messaggio |
+  |--------|---------|-----------|
+  | 201 | No | Dispositivo selezionato aggiornato. |
+  | 422 | Sì | Impossibile selezionare il dispositivo. |
+
+
+TODO: get primo dispositivo registrato manualmente che trovo in lista
+
+Readme in costruzione
