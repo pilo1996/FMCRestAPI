@@ -439,7 +439,8 @@ include 'functions.php';
         public function uploadImage($userID, $img_reference){
             $dest_dir = 'C:/xampp/htdocs/profilepics/';
             $imgPath = null;
-            $target_file = $dest_dir . uniqid() . '.'.$img_reference;
+            $filename = uniqid().'.'.$img_reference;
+            $target_file = $dest_dir.$filename;
             if (move_uploaded_file($_FILES["image"]["tmp_name"], $target_file)) {
                 $sql = "UPDATE users SET profile_pic = ? WHERE id = ?;";
                 $stmt = $this->conn->prepare($sql);
@@ -450,7 +451,7 @@ include 'functions.php';
                     $url .= $_SERVER['SERVER_NAME'];
                     $url .= $_SERVER['REQUEST_URI'];
                     $imgPath =  dirname($url).'/profilepics/';*/
-                    $imgPath = 'http://camoli.ns0.it/profilepics/';
+                    $imgPath = 'http://camoli.ns0.it/profilepics/'.$filename;
                 }
             }
             return $imgPath;

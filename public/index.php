@@ -190,7 +190,7 @@ $app->put('/updateSelectedDevice', function (Request $request, Response $respons
 //TODO api per richiedere reset password
 
 $app->post('/uploadProfilePic', function (Request $request, Response $response){
-    if(!hasEmptyParameters(array('user_id'), $request, $response)) {
+
         if(isset($_FILES['image']['name'])){
             $request_data = $request->getParsedBody();
 
@@ -200,6 +200,7 @@ $app->post('/uploadProfilePic', function (Request $request, Response $response){
             $dbo = new DBOperations();
             $response_data = array();
             $urlImg = $dbo->uploadImage($userID, $img_name);
+
             if ($urlImg != null) {
                 $response_data['error'] = false;
                 $response_data['message'] = "Dispositivo selezionato aggiornato.";
@@ -214,8 +215,6 @@ $app->post('/uploadProfilePic', function (Request $request, Response $response){
         }
         else
             return $response->withHeader('Content-type', 'application/json')->withStatus(421);
-    }else
-        return $response->withHeader('Content-type', 'application/json')->withStatus(420);
 });
 
 //************************************** LOCATIONS **************************************
