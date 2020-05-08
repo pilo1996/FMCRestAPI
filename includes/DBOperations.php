@@ -1,6 +1,12 @@
 <?php
 
 include 'functions.php';
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+
+// Load Composer's autoloader
+require '../vendor/autoload.php';
 
     class DBOperations{
         private $conn;
@@ -79,6 +85,16 @@ include 'functions.php';
             return $user;
         }
 
+        public function getNomeByEmail($email){
+            $sql = "SELECT nome FROM users WHERE email=?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            $stmt->bind_result($nome);
+            $stmt->fetch();
+            return $nome;
+        }
+
         public function getUserByID($id){
             $sql = "SELECT * FROM users WHERE id=?";
             $stmt = $this->conn->prepare($sql);
@@ -134,7 +150,7 @@ include 'functions.php';
         }
 
         public function emailExists($email){
-            $sql = "SELECT email FROM users WHERE email=?";
+            $sql = "SELECT * FROM users WHERE email=?;";
             $stmt = $this->conn->prepare($sql);
             $stmt->bind_param("s", $email);
             $stmt->execute();
@@ -455,5 +471,95 @@ include 'functions.php';
                 }
             }
             return $imgPath;
+        }
+
+        public function resetPasswordRequest($email){
+            if($this->emailExists($email)){
+                $token = 'qwertyuiopasdfghjklzxcvbnm-1234567890)(£!QWERTYUIOPLKJHGFDSAZXCVBNM';
+                $token = str_shuffle($token);
+                $token = substr($token, 0, 16);
+
+                $sql = "UPDATE users SET password = ?, token = ? WHERE email = ?;";
+                $stmt = $this->conn->prepare($sql);
+                $newPassword = encryptPassword($token);
+                $stmt->bind_param("sss", $newPassword, $token, $email);
+                if($stmt->execute()){
+                    return $this->sendEmail_resetPassword($email, $token, $this->getNomeByEmail($email));
+                }else
+                    return PASSWORD_FAULT;
+            }else{
+                return USER_NOT_FOUND;
+            }
+        }
+
+        private function sendEmail_resetPassword($email, $token, $nome){
+            $mail = new PHPMailer(true);
+
+            try{
+                $mail->SMTPDebug = SMTP::DEBUG_SERVER;
+                $mail->isSMTP();                                            // Send using SMTP
+
+                $mail->Host       = 'smtp.gmail.com';                       // Set the SMTP server to send through
+                $mail->SMTPAuth   = true;                                   // Enable SMTP authentication
+                $mail->Username   = 'ciccio.babau@gmail.com';                // SMTP username
+                $mail->Password   = 'S4suk300!';                            // SMTP password
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;         // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` encouraged
+                $mail->Port       = 465;                                    // TCP port to connect to, use 465 for `PHPMailer::ENCRYPTION_SMTPS` above
+
+                $mail->setFrom('ciccio.babau@gmail.com', 'Find My Coso');
+                $mail->addAddress($email);
+                $mail->Subject = "Reset password account Find My Coso";
+                $mail->isHTML(true);
+                $mail->Body = "Gentile $nome,<br> Per poter resettare la password del tuo account Find My Coso, <br> è necessario cliccare nel seguente <a href='http://camoli.ns0.it/reset.php?email=$email&token=$token'> link</a>.";
+                $mail->send();
+                return PASSWORD_RESETTED;
+            }catch (Exception $e) {
+                return EMAIL_FAULT;
+            }
+        }
+
+        private function sendValidationEmail($email, $token, $nome){
+            $mail = new PHPMailer(true);
+
+            try{
+                $mail->SMTPDebug = SMTP::DEBUG_SERVER;
+                $mail->isSMTP();                                            // Send using SMTP
+
+                //google
+                $mail->Host       = 'smtp.gmail.com';                       // Set the SMTP server to send through
+                $mail->SMTPAuth   = true;                                   // Enable SMTP authentication
+                $mail->Username   = 'ciccio.babau@gmail.com';                // SMTP username
+                $mail->Password   = 'S4suk300!';                            // SMTP password
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;         // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` encouraged
+                $mail->Port       = 465;                                    // TCP port to connect to, use 465 for `PHPMailer::ENCRYPTION_SMTPS` above
+
+                $mail->setFrom('ciccio.babau@gmail.com', 'Find My Coso');
+                $mail->addAddress($email);
+                $mail->Subject = "Verifica email account Find My Coso";
+                $mail->isHTML(true);
+                $mail->Body = "
+                                        Benvenuto $nome,<br>
+                                        Per poter attivare il tuo account da utilizzare nel servizio di Find My Coso,
+                                        è necessario cliccare sul seguente <a href='http://camoli.ns0.it/convalida.php?email=$email&token=$token'> link</a>.";
+
+                $mail->send();
+                return PASSWORD_RESETTED;
+            }catch (Exception $e) {
+                return EMAIL_FAULT;
+            }
+        }
+
+        public function sendEmailValidationRequest($email){
+            if($this->emailExists($email)){
+                $token = 'qwertyuiopasdfghjklzxcvbnm-1234567890)(£!QWERTYUIOPLKJHGFDSAZXCVBNM';
+                $token = substr(str_shuffle($token), 0, 16);
+                $sql = "UPDATE users SET token = ? WHERE email = ?;";
+                $stmt = $this->conn->prepare($sql);
+                $stmt->bind_param("ss",$token, $email);
+                if($stmt->execute())
+                    return $this->sendValidationEmail($email, $token, $this->getNomeByEmail($email));
+            }
+            else
+                return USER_NOT_FOUND;
         }
     }

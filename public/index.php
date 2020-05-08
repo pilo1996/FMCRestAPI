@@ -66,8 +66,7 @@ $app->post('/userlogin', function (Request $request, Response $response){
 
         $result = $dbo->userLogin($email, $password);
         $response_data = array();
-
-        $status_code = 422;
+        $status_code = 0;
         switch ($result){
             case USER_AUTHENTICATED:
                 $user = $dbo->getUserByEmail($email);
@@ -79,18 +78,19 @@ $app->post('/userlogin', function (Request $request, Response $response){
             case USER_NOT_FOUND:
                 $response_data['error'] = true;
                 $response_data['message'] = 'Utente NON trovato.';
+                $status_code = 422;
                 break;
             case USER_PASSWORD_MISMATCH:
                 $response_data['error'] = true;
                 $response_data['message'] = 'Password non corretta.';
+                $status_code = 423;
                 break;
         }
-
         $response->write(json_encode($response_data));
         return $response->withHeader('Content-type', 'application/json')->withStatus($status_code);
     }
     else
-        return $response->withHeader('Content-type', 'application/json')->withStatus(422);
+        return $response->withHeader('Content-type', 'application/json')->withStatus(421);
 });
 
 $app->put('/updateUser/{id}', function (Request $request, Response $response, array $args){
@@ -122,7 +122,6 @@ $app->put('/updateUser/{id}', function (Request $request, Response $response, ar
         return $response->withHeader('Content-type', 'application/json')->withStatus(422);
 });
 
-//TODO da usarlo per il form di cambio password nel sito web
 $app->put('/updatePassword', function (Request $request, Response $response){
 
     if(!hasEmptyParameters(array('id', 'currentPassword', 'newPassword'), $request, $response)){
@@ -156,8 +155,9 @@ $app->put('/updatePassword', function (Request $request, Response $response){
                 return $response->withHeader('Content-type', 'application/json')->withStatus(422);
                 break;
         }
-    }else
-        return $response->withHeader('Content-type', 'application/json')->withStatus(422);
+    }
+
+    return $response->withHeader('Content-type', 'application/json')->withStatus(422);
 });
 
 $app->put('/updateSelectedDevice', function (Request $request, Response $response){
@@ -187,34 +187,115 @@ $app->put('/updateSelectedDevice', function (Request $request, Response $respons
         return $response->withHeader('Content-type', 'application/json')->withStatus(422);
 });
 
-//TODO api per richiedere reset password
+$app->post('/resetPassword', function (Request $request, Response $response){
+    if(!hasEmptyParameters(array('email'), $request, $response)){
+        $request_data = $request->getParsedBody();
+
+        $email = $request_data['email'];
+
+        $dbo = new DBOperations();
+
+        $result = $dbo->resetPasswordRequest($email);
+        $response_data = array();
+
+        $status_code = 422;
+        switch ($result){
+            case PASSWORD_RESETTED:
+                $response_data['error'] = false;
+                $response_data['message'] = 'Password resettata, controlla la tua mail.';
+                $status_code = 200;
+                break;
+            case USER_NOT_FOUND:
+                $response_data['error'] = true;
+                $response_data['message'] = 'Utente NON trovato.';
+                $status_code = 424;
+                break;
+            case PASSWORD_FAULT:
+                $response_data['error'] = true;
+                $response_data['message'] = 'Errore elaborazione richiesta';
+                $status_code = 421;
+                break;
+            case EMAIL_FAULT:
+                $response_data['error'] = true;
+                $response_data['message'] = 'Errore invio email';
+                $status_code = 423;
+                break;
+        }
+
+        $response->write(json_encode($response_data));
+        return $response->withHeader('Content-type', 'application/json')->withStatus($status_code);
+    }
+    else
+        return $response->withHeader('Content-type', 'application/json')->withStatus(422);
+});
 
 $app->post('/uploadProfilePic', function (Request $request, Response $response){
+    if(isset($_FILES['image']['name'])){
+        $request_data = $request->getParsedBody();
 
-        if(isset($_FILES['image']['name'])){
-            $request_data = $request->getParsedBody();
+        $img_name = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
+        $userID = $request_data['user_id'];
 
-            $img_name = pathinfo($_FILES['image']['name'], PATHINFO_EXTENSION);
-            $userID = $request_data['user_id'];
+        $dbo = new DBOperations();
+        $response_data = array();
+        $urlImg = $dbo->uploadImage($userID, $img_name);
 
-            $dbo = new DBOperations();
-            $response_data = array();
-            $urlImg = $dbo->uploadImage($userID, $img_name);
-
-            if ($urlImg != null) {
-                $response_data['error'] = false;
-                $response_data['message'] = "Dispositivo selezionato aggiornato.";
-                $response_data['url'] = $urlImg;
-                $response->write(json_encode($response_data));
-                return $response->withHeader('Content-type', 'application/json')->withStatus(200);
-            } else {
-                $response_data['error'] = true;
-                $response_data['message'] = "Impossibile aggiornare la foto profilo";
-                return $response->withHeader('Content-type', 'application/json')->withStatus(422);
-            }
+        if ($urlImg != null) {
+            $response_data['error'] = false;
+            $response_data['message'] = "Dispositivo selezionato aggiornato.";
+            $response_data['url'] = $urlImg;
+            $response->write(json_encode($response_data));
+            return $response->withHeader('Content-type', 'application/json')->withStatus(200);
+        } else {
+            $response_data['error'] = true;
+            $response_data['message'] = "Impossibile aggiornare la foto profilo";
+            return $response->withHeader('Content-type', 'application/json')->withStatus(422);
         }
-        else
-            return $response->withHeader('Content-type', 'application/json')->withStatus(421);
+    }
+    else
+        return $response->withHeader('Content-type', 'application/json')->withStatus(421);
+});
+
+$app->post('/sendEmailValidation', function (Request $request, Response $response){
+    if(!hasEmptyParameters(array('email'), $request, $response)){
+        $request_data = $request->getParsedBody();
+
+        $email = $request_data['email'];
+
+        $dbo = new DBOperations();
+
+        $result = $dbo->sendEmailValidationRequest($email);
+        $response_data = array();
+
+        $status_code = 422;
+        switch ($result){
+            case PASSWORD_RESETTED:
+                $response_data['error'] = false;
+                $response_data['message'] = 'Password resettata, controlla la tua mail.';
+                $status_code = 200;
+                break;
+            case USER_NOT_FOUND:
+                $response_data['error'] = true;
+                $response_data['message'] = 'Utente NON trovato.';
+                $status_code = 424;
+                break;
+            case PASSWORD_FAULT:
+                $response_data['error'] = true;
+                $response_data['message'] = 'Errore elaborazione richiesta';
+                $status_code = 421;
+                break;
+            case EMAIL_FAULT:
+                $response_data['error'] = true;
+                $response_data['message'] = 'Errore invio email';
+                $status_code = 423;
+                break;
+        }
+
+        $response->write(json_encode($response_data));
+        return $response->withHeader('Content-type', 'application/json')->withStatus($status_code);
+    }
+    else
+        return $response->withHeader('Content-type', 'application/json')->withStatus(422);
 });
 
 //************************************** LOCATIONS **************************************
@@ -311,7 +392,7 @@ $app->post('/deleteAllPositionsByDevice', function (Request $request, Response $
         } else {
             $response_data['error'] = true;
             $response_data['message'] = 'Posizioni non eliminati.';
-            $statusCode = 420;
+            $statusCode = 424;
         }
         $response->write(json_encode($response_data));
     }

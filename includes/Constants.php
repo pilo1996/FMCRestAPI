@@ -28,3 +28,7 @@
     define('POSITION_ADDED', 501);
     define('POSITION_FAILURE', 502);
 
+    define('PASSWORD_RESETTED', 601);
+    define('PASSWORD_FAULT', 602);
+    define('EMAIL_FAULT', 603);
+
