@@ -501,12 +501,12 @@ require '../vendor/autoload.php';
 
                 $mail->Host       = 'smtp.gmail.com';                       // Set the SMTP server to send through
                 $mail->SMTPAuth   = true;                                   // Enable SMTP authentication
-                $mail->Username   = 'ciccio.babau@gmail.com';                // SMTP username
-                $mail->Password   = 'S4suk300!';                            // SMTP password
+                $mail->Username   = 'email@gmail.com';                // SMTP username
+                $mail->Password   = 'LM40';                            // SMTP password
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;         // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` encouraged
                 $mail->Port       = 465;                                    // TCP port to connect to, use 465 for `PHPMailer::ENCRYPTION_SMTPS` above
 
-                $mail->setFrom('ciccio.babau@gmail.com', 'Find My Coso');
+                $mail->setFrom('email@gmail.com', 'Find My Coso');
                 $mail->addAddress($email);
                 $mail->Subject = "Reset password account Find My Coso";
                 $mail->isHTML(true);
@@ -528,12 +528,12 @@ require '../vendor/autoload.php';
                 //google
                 $mail->Host       = 'smtp.gmail.com';                       // Set the SMTP server to send through
                 $mail->SMTPAuth   = true;                                   // Enable SMTP authentication
-                $mail->Username   = 'ciccio.babau@gmail.com';                // SMTP username
-                $mail->Password   = 'S4suk300!';                            // SMTP password
+                $mail->Username   = 'email@gmail.com';                // SMTP username
+                $mail->Password   = 'LM40';                            // SMTP password
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;         // Enable TLS encryption; `PHPMailer::ENCRYPTION_SMTPS` encouraged
                 $mail->Port       = 465;                                    // TCP port to connect to, use 465 for `PHPMailer::ENCRYPTION_SMTPS` above
 
-                $mail->setFrom('ciccio.babau@gmail.com', 'Find My Coso');
+                $mail->setFrom('email@gmail.com', 'Find My Coso');
                 $mail->addAddress($email);
                 $mail->Subject = "Verifica email account Find My Coso";
                 $mail->isHTML(true);
