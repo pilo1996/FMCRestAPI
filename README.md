@@ -1,3 +1,5 @@
+[![CodeFactor](https://www.codefactor.io/repository/github/pilo1996/fmcrestapi/badge)](https://www.codefactor.io/repository/github/pilo1996/fmcrestapi)
+
 # Find My Coso REST API con Framework Slim 3
 
 API REST create da uno scheletro del framework Slim versione 3 (attualmente 4) per via di compatibilità.
